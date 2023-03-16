@@ -11,6 +11,9 @@ namespace BugTrackerPrime.Models
         public int TicketId { get; set; }
 
         [DisplayName("Updated Item")]
+        public string Property { get; set; }
+
+        [DisplayName("Updated Item")]
         public string Priority { get; set; }
 
         [DisplayName("Previous")]

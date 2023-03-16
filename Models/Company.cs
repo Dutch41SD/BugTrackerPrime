@@ -17,6 +17,8 @@ namespace BugTrackerPrime.Models
         //Navigation Properties
         public virtual ICollection<BTUser> Members { get; set; }
         public virtual ICollection<Project> Projects { get; set; }
+        
         // Create a relationship to invite
+        public virtual ICollection<Invite> Invites { get; set; }
     }
 }
