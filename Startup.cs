@@ -32,8 +32,7 @@ namespace BugTrackerPrime
         public void ConfigureServices(IServiceCollection services)
         {
             services.AddDbContext<ApplicationDbContext>(options =>
-                options.UseNpgsql(
-                    Configuration.GetConnectionString("DefaultConnection")));
+                options.UseNpgsql(DataUtility.GetConnectionString(Configuration)));
 
             services.AddDatabaseDeveloperPageExceptionFilter();
 
@@ -50,6 +49,7 @@ namespace BugTrackerPrime
             services.AddScoped<IBTTicketHistoryService, BTTicketHistoryService>();
             services.AddScoped<IBTNotificationService, BTNotificationService>();
             services.AddScoped<IBTInviteService, BTInviteService>();
+            services.AddScoped<IBTFileService, BTFileService>();
 
             services.AddScoped<IEmailSender, BTEmailService>();
             services.Configure<MailSettings>(Configuration.GetSection("MailSettings"));
