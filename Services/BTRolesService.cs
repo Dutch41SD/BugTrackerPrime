@@ -2,6 +2,8 @@
 using BugTrackerPrime.Models;
 using BugTrackerPrime.Services.Interfaces;
 using Microsoft.AspNetCore.Identity;
+using Microsoft.EntityFrameworkCore;
+using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
@@ -10,10 +12,13 @@ namespace BugTrackerPrime.Services
 {
     public class BTRolesService : IBTRolesService
     {
+        #region Properties
         private readonly ApplicationDbContext _context;
         private readonly RoleManager<IdentityRole> _roleManager;
         private readonly UserManager<BTUser> _userManager;
-        
+        #endregion
+
+        #region Constructor
         public BTRolesService(ApplicationDbContext context,
                                 RoleManager<IdentityRole> roleManager,
                                 UserManager<BTUser> userManager)
@@ -21,15 +26,39 @@ namespace BugTrackerPrime.Services
             _context = context;
             _roleManager = roleManager;
             _userManager = userManager;
-        }
+        } 
+        #endregion
 
 
+        #region Add User To Role
         public async Task<bool> AddUserToRoleAsync(BTUser user, string roleName)
         {
             bool result = (await _userManager.AddToRoleAsync(user, roleName)).Succeeded;
             return result;
         }
 
+        #endregion
+
+        #region GetRoles
+        public async Task<List<IdentityRole>> GetRolesAsync()
+        {
+            try
+            {
+                List<IdentityRole> result = new();
+
+                result = await _context.Roles.ToListAsync();
+
+                return result;
+            }
+            catch (Exception)
+            {
+
+                throw;
+            }
+        }
+
+        #endregion
+        #region Get Role Name By Id
         public async Task<string> GetRoleNameByIdAsync(string roleId)
         {
             IdentityRole role = _context.Roles.Find(roleId);
@@ -37,6 +66,7 @@ namespace BugTrackerPrime.Services
             return result;
         }
 
+        #endregion
         public async Task<IEnumerable<string>> GetUserRolesAsync(BTUser user)
         {
             IEnumerable<string> result = await _userManager.GetRolesAsync(user);
