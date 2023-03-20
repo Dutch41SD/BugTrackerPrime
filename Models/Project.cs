@@ -23,9 +23,11 @@ namespace BugTrackerPrime.Models
         public string Description { get; set; }
 
         [DisplayName("Start Date")]
+        [DataType(DataType.Date)]
         public DateTimeOffset StartDate { get; set; }
 
-        [DisplayName("Start Date")]
+        [DisplayName("End Date")]
+        [DataType(DataType.Date)]
         public DateTimeOffset EndDate { get; set; }
 
         [DisplayName("Priority")]
@@ -50,6 +52,8 @@ namespace BugTrackerPrime.Models
 
         public virtual ICollection<BTUser> Member { get; set; } = new HashSet<BTUser>();
         public virtual ICollection<Ticket> Tickets { get; set; } = new HashSet<Ticket>();
+
+        [NotMapped]
         public object Members { get; internal set; }
     }
 }

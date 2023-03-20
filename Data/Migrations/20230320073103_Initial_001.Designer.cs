@@ -10,8 +10,8 @@ using Npgsql.EntityFrameworkCore.PostgreSQL.Metadata;
 namespace BugTrackerPrime.Data.Migrations
 {
     [DbContext(typeof(ApplicationDbContext))]
-    [Migration("20230312081447_Data Models")]
-    partial class DataModels
+    [Migration("20230320073103_Initial_001")]
+    partial class Initial_001
     {
         protected override void BuildTargetModel(ModelBuilder modelBuilder)
         {
@@ -309,6 +309,9 @@ namespace BugTrackerPrime.Data.Migrations
                     b.Property<bool>("Archived")
                         .HasColumnType("boolean");
 
+                    b.Property<bool>("ArchivedByProject")
+                        .HasColumnType("boolean");
+
                     b.Property<DateTimeOffset>("Created")
                         .HasColumnType("timestamp with time zone");
 
@@ -444,6 +447,9 @@ namespace BugTrackerPrime.Data.Migrations
                         .HasColumnType("text");
 
                     b.Property<string>("Priority")
+                        .HasColumnType("text");
+
+                    b.Property<string>("Property")
                         .HasColumnType("text");
 
                     b.Property<int>("TicketId")
@@ -663,7 +669,7 @@ namespace BugTrackerPrime.Data.Migrations
             modelBuilder.Entity("BugTrackerPrime.Models.Invite", b =>
                 {
                     b.HasOne("BugTrackerPrime.Models.Company", "Company")
-                        .WithMany()
+                        .WithMany("Invites")
                         .HasForeignKey("CompanyId")
                         .OnDelete(DeleteBehavior.Cascade)
                         .IsRequired();
@@ -706,7 +712,7 @@ namespace BugTrackerPrime.Data.Migrations
                         .IsRequired();
 
                     b.HasOne("BugTrackerPrime.Models.Ticket", "Ticket")
-                        .WithMany("Notification")
+                        .WithMany("Notifications")
                         .HasForeignKey("TicketId")
                         .OnDelete(DeleteBehavior.Cascade)
                         .IsRequired();
@@ -783,7 +789,7 @@ namespace BugTrackerPrime.Data.Migrations
             modelBuilder.Entity("BugTrackerPrime.Models.TicketAttachment", b =>
                 {
                     b.HasOne("BugTrackerPrime.Models.Ticket", "Ticket")
-                        .WithMany("Attatchment")
+                        .WithMany("Attatchments")
                         .HasForeignKey("TicketId")
                         .OnDelete(DeleteBehavior.Cascade)
                         .IsRequired();
@@ -884,6 +890,8 @@ namespace BugTrackerPrime.Data.Migrations
 
             modelBuilder.Entity("BugTrackerPrime.Models.Company", b =>
                 {
+                    b.Navigation("Invites");
+
                     b.Navigation("Members");
 
                     b.Navigation("Projects");
@@ -896,13 +904,13 @@ namespace BugTrackerPrime.Data.Migrations
 
             modelBuilder.Entity("BugTrackerPrime.Models.Ticket", b =>
                 {
-                    b.Navigation("Attatchment");
+                    b.Navigation("Attatchments");
 
                     b.Navigation("Comments");
 
                     b.Navigation("History");
 
-                    b.Navigation("Notification");
+                    b.Navigation("Notifications");
                 });
 #pragma warning restore 612, 618
         }
