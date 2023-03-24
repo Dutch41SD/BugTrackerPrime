@@ -94,14 +94,23 @@ namespace BugTrackerPrime.Services
             try
             {
                 project.Archived = true;
-                _context.Update(project);
-                await _context.SaveChangesAsync();
+                await UpdateProjectAsync(project);
+
+                // Archive the Tickets for the Project
+                foreach (Ticket ticket in project.Tickets)
+                {
+                    ticket.ArchivedByProject = true;
+                    _context.Update(ticket);
+                    await _context.SaveChangesAsync();
+                }
+
             }
             catch (Exception)
             {
 
                 throw;
-            }        }
+            }        
+        }
         
 
         public async Task<List<BTUser>> GetAllProjectMembersExceptPMAsync(int projectId)
@@ -116,7 +125,7 @@ namespace BugTrackerPrime.Services
 
         }
 
-        public async Task<List<Project>> GetAllProjectsByCompany(int companyId)
+        public async Task<List<Project>> GetAllProjectsByCompanyAsync(int companyId)
         {
             List<Project> projects = new();
 
@@ -147,7 +156,7 @@ namespace BugTrackerPrime.Services
 
         public async Task<List<Project>> GetAllProjectsByPriority(int companyId, string priorityName)
         {
-            List<Project> projects = await GetAllProjectsByCompany(companyId);
+            List<Project> projects = await GetAllProjectsByCompanyAsync(companyId);
             int priorityId = await LookupProjectPriorityId(priorityName);
 
             return projects.Where(p => p.ProjectPriorityId == priorityId).ToList();
@@ -155,9 +164,9 @@ namespace BugTrackerPrime.Services
 
         }
 
-        public async Task<List<Project>> GetArchivedProjectsByCompany(int companyId)
+        public async Task<List<Project>> GetArchivedProjectsByCompanyAsync(int companyId)
         {
-            List<Project> projects = await GetAllProjectsByCompany(companyId);
+            List<Project> projects = await GetAllProjectsByCompanyAsync(companyId);
 
             return projects.Where(p => p.Archived == true).ToList();
         }
@@ -356,6 +365,29 @@ namespace BugTrackerPrime.Services
             catch (Exception ex)
             {
                 Console.WriteLine($"*******  ERROR  *******  -  Error Removing Users from Project.  ---->  {ex.Message}");
+                throw;
+            }
+        }
+
+        public async Task RestoreProjectAsync(Project project)
+        {
+            try
+            {
+                project.Archived = false;
+                await UpdateProjectAsync(project);
+
+                // Archive the Tickets for the Project
+                foreach (Ticket ticket in project.Tickets)
+                {
+                    ticket.ArchivedByProject = false;
+                    _context.Update(ticket);
+                    await _context.SaveChangesAsync();
+                }
+
+            }
+            catch (Exception)
+            {
+
                 throw;
             }
         }

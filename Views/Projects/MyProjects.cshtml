@@ -1,14 +1,19 @@
 ﻿@model IEnumerable<BugTrackerPrime.Models.Project>
+@using BugTrackerPrime.Models.Enums
 
 @{
-    ViewData["Title"] = "Index";
+    ViewData["Title"] = "MyProjects";
 }
 
-<h1>Index</h1>
+<h1>MyProjects</h1>
 
-<p>
-    <a asp-action="Create">Create New</a>
-</p>
+@if(User.IsInRole(nameof(Roles.Admin)) || User.IsInRole(nameof(Roles.ProjectManager)))
+{
+    <p>
+        <a asp-action="Create">Create New</a>
+    </p>
+}
+
 <table class="table">
     <thead>
         <tr>
@@ -83,8 +88,11 @@
             </td>
             <td>
                 <a asp-action="Edit" asp-route-id="@item.Id">Edit</a> |
-                <a asp-action="Details" asp-route-id="@item.Id">Details</a> |
-                    @if (item.Archived)
+                @if (User.IsInRole(nameof(Roles.Admin)) || User.IsInRole(nameof(Roles.ProjectManager)))
+                {
+                    <a asp-action="Details" asp-route-id="@item.Id">Details</a>
+                    
+                    @if(item.Archived)
                     {
                         <a asp-action="Restore" asp-route-id="@item.Id">Restore</a>
                     }
@@ -92,7 +100,8 @@
                     {
                         <a asp-action="Archive" asp-route-id="@item.Id">Archive</a>
                     }
-            </td>
+                }
+                </td>
         </tr>
 }
     </tbody>

@@ -12,6 +12,7 @@ using BugTrackerPrime.Models.ViewModels;
 using BugTrackerPrime.Services.Interfaces;
 using BugTrackerPrime.Models.Enums;
 using BugTrackerPrime.Services;
+using Microsoft.AspNetCore.Identity;
 
 namespace BugTrackerPrime.Controllers
 {
@@ -22,18 +23,24 @@ namespace BugTrackerPrime.Controllers
         private readonly IBTLookupService _lookupService;
         private readonly IBTFileService _fileService;
         private readonly IBTProjectService _projectService;
+        private readonly IBTCompanyInfoService _companyInfoService;
+        private readonly UserManager<BTUser> _userManager;
 
         public ProjectsController(ApplicationDbContext context,
                                   IBTRolesService roleService,
                                   IBTLookupService lookupService,
                                   IBTFileService fileService, 
-                                  IBTProjectService projectService)
+                                  IBTProjectService projectService,
+                                  IBTCompanyInfoService companyInfoService,
+                                  UserManager<BTUser> userManager)
         {
             _context = context;
             _roleService = roleService;
             _lookupService = lookupService;
             _fileService = fileService;
             _projectService = projectService;
+            _companyInfoService = companyInfoService;
+            _userManager = userManager;
         }
 
         // GET: Projects
@@ -41,6 +48,44 @@ namespace BugTrackerPrime.Controllers
         {
             var applicationDbContext = _context.Projects.Include(p => p.Company).Include(p => p.ProjectPriority);
             return View(await applicationDbContext.ToListAsync());
+        }
+
+        public async Task<IActionResult> MyProjects()
+        {
+            string userId = _userManager.GetUserId(User);
+
+            List<Project> projects = await _projectService.GetUserProjectsAsync(userId);
+
+            return View(projects);
+        }
+
+        public async Task<IActionResult> AllProjects()
+        {
+
+            List<Project> projects = new();
+
+            int companyId = User.Identity.GetCompanyId().Value;
+
+            if(User.IsInRole(nameof(Roles.Admin)) || User.IsInRole(nameof(Roles.ProjectManager)))
+            {
+                projects = await _companyInfoService.GetAllProjectsAsync(companyId);
+            }
+            else
+            {
+                projects = await _projectService.GetAllProjectsByCompanyAsync(companyId);
+            }
+
+            return View(projects);
+
+        }
+
+        public async Task<IActionResult> ArchivedProjects()
+        {
+            int companyId = User.Identity.GetCompanyId().Value;
+
+            List<Project> projects = await _projectService.GetArchivedProjectsByCompanyAsync(companyId);
+
+            return View(projects);
         }
 
         // GET: Projects/Details/5
@@ -213,6 +258,40 @@ namespace BugTrackerPrime.Controllers
             
             return RedirectToAction(nameof(Index));
         }
+
+        // GET: Projects/Archive/5
+        public async Task<IActionResult> Restore(int? id)
+        {
+            if (id == null)
+            {
+                return NotFound();
+            }
+
+            int companyId = User.Identity.GetCompanyId().Value;
+            var project = await _projectService.GetProjectByIdAsync(id.Value, companyId);
+
+
+            if (project == null)
+            {
+                return NotFound();
+            }
+
+            return View(project);
+        }
+
+        // POST: Projects/Archive/5
+        [HttpPost, ActionName("Restore")]
+        [ValidateAntiForgeryToken]
+        public async Task<IActionResult> RestoreConfirmed(int id)
+        {
+            int companyId = User.Identity.GetCompanyId().Value;
+
+            var project = await _projectService.GetProjectByIdAsync(id, companyId);
+            await _projectService.RestoreProjectAsync(project);
+
+            return RedirectToAction(nameof(Index));
+        }
+
 
         private bool ProjectExists(int id)
         {
