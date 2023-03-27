@@ -1,5 +1,6 @@
 ﻿using BugTrackerPrime.Models;
 using System;
+using System.Collections;
 using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
@@ -40,6 +41,8 @@ namespace BugTrackerPrime.Services.Interfaces
 
         public Task<bool> IsUserOnProjectAsync(string userId, int projectId);
 
+        public Task<bool> IsAssignedProjectManagerAsync(string userId, int projectId);
+
         public Task<int> LookupProjectPriorityId(string priorityName);
 
         public Task RemoveProjectManagerAsync(int projectId);
@@ -51,5 +54,6 @@ namespace BugTrackerPrime.Services.Interfaces
         public Task RestoreProjectAsync(Project project);
 
         public Task UpdateProjectAsync(Project project);
+        Task<IEnumerable> GetAllProjectsByCompanyAsync(string id);
     }
 }

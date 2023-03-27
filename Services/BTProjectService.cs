@@ -4,6 +4,7 @@ using BugTrackerPrime.Models.Enums;
 using BugTrackerPrime.Services.Interfaces;
 using Microsoft.EntityFrameworkCore;
 using System;
+using System.Collections;
 using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
@@ -129,29 +130,43 @@ namespace BugTrackerPrime.Services
         {
             List<Project> projects = new();
 
-            projects = await _context.Projects.Where(p => p.CompanyId == companyId && p.Archived == false)
-                                            .Include(p => p.Members)
-                                            .Include(p => p.Tickets)
-                                                .ThenInclude(t => t.Comments)
-                                            .Include(p => p.Tickets)
-                                                .ThenInclude(t => t.Attatchments)
-                                            .Include(p => p.Tickets)
-                                                .ThenInclude(t => t.History)
-                                            .Include(p => p.Tickets)
-                                                .ThenInclude(t => t.Notifications)
-                                            .Include(p => p.Tickets)
-                                                .ThenInclude(t => t.DeveloperUser)
-                                            .Include(p => p.Tickets)
-                                                .ThenInclude(t => t.OwnerUser)
-                                            .Include(p => p.Tickets)
-                                                .ThenInclude(t => t.TicketStatus)
-                                            .Include(p => p.Tickets)
-                                                .ThenInclude(t => t.TicketPriority)
-                                            .Include(p => p.Tickets)
-                                                .ThenInclude(t => t.TicketType)
-                                            .Include(p => p.ProjectPriority)
-                                            .ToListAsync();
-            return projects;
+            try
+            {
+
+                projects = await _context.Projects.Where(p => p.CompanyId == companyId && p.Archived == false)
+                                                .Include(p => p.Members)
+                                                .Include(p => p.Tickets)
+                                                    .ThenInclude(t => t.Comments)
+                                                .Include(p => p.Tickets)
+                                                    .ThenInclude(t => t.Attatchments)
+                                                .Include(p => p.Tickets)
+                                                    .ThenInclude(t => t.History)
+                                                .Include(p => p.Tickets)
+                                                    .ThenInclude(t => t.Notifications)
+                                                .Include(p => p.Tickets)
+                                                    .ThenInclude(t => t.DeveloperUser)
+                                                .Include(p => p.Tickets)
+                                                    .ThenInclude(t => t.OwnerUser)
+                                                .Include(p => p.Tickets)
+                                                    .ThenInclude(t => t.TicketStatus)
+                                                .Include(p => p.Tickets)
+                                                    .ThenInclude(t => t.TicketPriority)
+                                                .Include(p => p.Tickets)
+                                                    .ThenInclude(t => t.TicketType)
+                                                .Include(p => p.ProjectPriority)
+                                                .ToListAsync();
+                return projects;
+            }
+            catch (Exception)
+            {
+                throw;
+            }
+            
+        }
+
+        public Task<IEnumerable> GetAllProjectsByCompanyAsync(string id)
+        {
+            throw new NotImplementedException();
         }
 
         public async Task<List<Project>> GetAllProjectsByPriority(int companyId, string priorityName)
@@ -166,9 +181,38 @@ namespace BugTrackerPrime.Services
 
         public async Task<List<Project>> GetArchivedProjectsByCompanyAsync(int companyId)
         {
-            List<Project> projects = await GetAllProjectsByCompanyAsync(companyId);
+            try
+            {
+                List<Project> projects = await _context.Projects.Where(p => p.CompanyId == companyId && p.Archived == true)
+                                                .Include(p => p.Members)
+                                                .Include(p => p.Tickets)
+                                                    .ThenInclude(t => t.Comments)
+                                                .Include(p => p.Tickets)
+                                                    .ThenInclude(t => t.Attatchments)
+                                                .Include(p => p.Tickets)
+                                                    .ThenInclude(t => t.History)
+                                                .Include(p => p.Tickets)
+                                                    .ThenInclude(t => t.Notifications)
+                                                .Include(p => p.Tickets)
+                                                    .ThenInclude(t => t.DeveloperUser)
+                                                .Include(p => p.Tickets)
+                                                    .ThenInclude(t => t.OwnerUser)
+                                                .Include(p => p.Tickets)
+                                                    .ThenInclude(t => t.TicketStatus)
+                                                .Include(p => p.Tickets)
+                                                    .ThenInclude(t => t.TicketPriority)
+                                                .Include(p => p.Tickets)
+                                                    .ThenInclude(t => t.TicketType)
+                                                .Include(p => p.ProjectPriority)
+                                                .ToListAsync();
 
-            return projects.Where(p => p.Archived == true).ToList();
+                return projects;
+            }
+            catch (Exception)
+            {
+
+                throw;
+            }
         }
 
         public Task<List<BTUser>> GetDevelopersOnProjectAsync(int projectId)
@@ -179,12 +223,38 @@ namespace BugTrackerPrime.Services
         // CRUD - Read
         public async Task<Project> GetProjectByIdAsync(int projectId, int companyId)
         {
-            Project project = await _context.Projects
-                                            .Include(p => p.Tickets)
-                                            .Include(p => p.Members)
-                                            .Include(p => p.ProjectPriority)
-                                            .FirstOrDefaultAsync(p => p.Id == projectId && p.CompanyId == companyId);
-            return project;
+            try
+            {
+                //Project project = await _context.Projects
+                //                                .Include(p => p.Tickets)
+                //                                .Include(p => p.Members)
+                //                                .Include(p => p.ProjectPriority)
+                //                                .FirstOrDefaultAsync(p => p.Id == projectId && p.CompanyId == companyId);
+
+                Project project = await _context.Projects
+                                                .Include(p => p.Tickets)
+                                                    .ThenInclude(t => t.TicketPriority)
+                                                .Include(p => p.Tickets)
+                                                    .ThenInclude(t => t.TicketStatus)
+                                                .Include(p => p.Tickets)
+                                                    .ThenInclude(t => t.TicketType)
+                                                .Include(p => p.Tickets)
+                                                    .ThenInclude(t => t.DeveloperUser)
+                                                .Include(p => p.Tickets)
+                                                    .ThenInclude(t => t.OwnerUser)
+                                                .Include(p => p.Members)
+                                                .Include(p => p.ProjectPriority)
+                                                .FirstOrDefaultAsync(p => p.Id == projectId && p.CompanyId == companyId);
+
+                return project;
+
+            }
+            catch (Exception)
+            {
+
+                throw;
+            }
+            
         }
 
         public async Task<BTUser> GetProjectManagerAsync(int projectId)
@@ -270,6 +340,33 @@ namespace BugTrackerPrime.Services
 
             return users.Where(u=> u.CompanyId == companyId).ToList();
         }
+
+        #region Is Assigned Project Manager
+
+        public async Task<bool> IsAssignedProjectManagerAsync(string userId, int projectId)
+        {
+            try
+            {
+                string projectManagerId = (await GetProjectManagerAsync(projectId))?.Id;
+
+                if (projectManagerId == userId) 
+                {
+                    return true;
+                }
+                else
+                {
+                    return false;
+                }
+
+            }
+            catch (Exception)
+            {
+
+                throw;
+            }
+        }
+
+        #endregion
 
         public async Task<bool> IsUserOnProjectAsync(string userId, int projectId)
         {

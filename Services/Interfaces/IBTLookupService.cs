@@ -1,4 +1,5 @@
 ﻿using BugTrackerPrime.Models;
+using System.Collections;
 using System.Collections.Generic;
 using System.Threading.Tasks;
 
@@ -13,5 +14,6 @@ namespace BugTrackerPrime.Services
         public Task<List<TicketType>> GetTicketType();
 
         public Task<List<ProjectPriority>> GetProjectPrioritiesAsync();
+        Task<IEnumerable> GetTicketTypeAsync();
     }
 }
