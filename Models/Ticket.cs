@@ -61,7 +61,7 @@ namespace BugTrackerPrime.Models
         public virtual BTUser DeveloperUser { get; set; }
 
         public virtual ICollection<TicketComment> Comments { get; set; } = new HashSet<TicketComment>();
-        public virtual ICollection<TicketAttachment> Attatchments { get; set; } = new HashSet<TicketAttachment>();
+        public virtual ICollection<TicketAttachment> Attachments { get; set; } = new HashSet<TicketAttachment>();
         public virtual ICollection<Notification> Notifications { get; set; } = new HashSet<Notification>();
         public virtual ICollection<TicketHistory> History { get; set; } = new HashSet<TicketHistory>();
 

@@ -35,7 +35,7 @@ namespace BugTrackerPrime.Services
                                             .Include(p=>p.Tickets)
                                                 .ThenInclude(t=>t.Comments)
                                             .Include(p => p.Tickets)
-                                                .ThenInclude(t => t.Attatchments)
+                                                .ThenInclude(t => t.Attachments)
                                             .Include(p => p.Tickets)
                                                 .ThenInclude(t => t.History)
                                             .Include(p => p.Tickets)

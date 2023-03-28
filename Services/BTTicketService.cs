@@ -43,7 +43,21 @@ namespace BugTrackerPrime.Services
 
         }
 
-        public async Task ArchiveTicketAsync(Ticket ticket)
+		public async Task AddTicketAttachmentAsync(TicketAttachment ticketAttachment)
+		{
+			try
+			{
+				await _context.AddAsync(ticketAttachment);
+				await _context.SaveChangesAsync();
+			}
+			catch (Exception)
+			{
+
+				throw;
+			}
+		}
+
+		public async Task ArchiveTicketAsync(Ticket ticket)
         {
             try
             {
@@ -60,6 +74,22 @@ namespace BugTrackerPrime.Services
 
         }
 
+        #region Add Ticket Comment
+        public async Task AddTicketCommentAsync(TicketComment ticketComment)
+        {
+            try
+            {
+                await _context.AddAsync(ticketComment);
+                await _context.SaveChangesAsync();
+            }
+            catch (Exception)
+            {
+
+                throw;
+            }
+        }
+
+        #endregion
         public async Task AssignTicketAsync(int ticketId, string userId)
         {
             Ticket ticket = await _context.Tickets.FirstOrDefaultAsync(t => t.Id == ticketId);
@@ -95,7 +125,7 @@ namespace BugTrackerPrime.Services
                 List<Ticket> tickets = await _context.Projects
                                                      .Where(p => p.CompanyId == companyId)
                                                      .SelectMany(p => p.Tickets)
-                                                        .Include(t => t.Attatchments)
+                                                        .Include(t => t.Attachments)
                                                         .Include(t => t.Comments)
                                                         .Include(t => t.History)
                                                         .Include(t => t.DeveloperUser)
@@ -123,7 +153,7 @@ namespace BugTrackerPrime.Services
                 List<Ticket> tickets = await _context.Projects
                                                      .Where(p => p.CompanyId == companyId)
                                                      .SelectMany(p => p.Tickets)
-                                                        .Include(t => t.Attatchments)
+                                                        .Include(t => t.Attachments)
                                                         .Include(t => t.Comments)
                                                         .Include(t => t.History)
                                                         .Include(t => t.DeveloperUser)
@@ -154,7 +184,7 @@ namespace BugTrackerPrime.Services
                 List<Ticket> tickets = await _context.Projects
                                                      .Where(p => p.CompanyId == companyId)
                                                      .SelectMany(p => p.Tickets)
-                                                        .Include(t => t.Attatchments)
+                                                        .Include(t => t.Attachments)
                                                         .Include(t => t.Comments)
                                                         .Include(t => t.History)
                                                         .Include(t => t.DeveloperUser)
@@ -183,7 +213,7 @@ namespace BugTrackerPrime.Services
                 List<Ticket> tickets = await _context.Projects
                                                      .Where(p => p.CompanyId == companyId)
                                                      .SelectMany(p => p.Tickets)
-                                                        .Include(t => t.Attatchments)
+                                                        .Include(t => t.Attachments)
                                                         .Include(t => t.Comments)
                                                         .Include(t => t.History)
                                                         .Include(t => t.DeveloperUser)
@@ -293,7 +323,7 @@ namespace BugTrackerPrime.Services
                                      .Include(t => t.TicketStatus)
                                      .Include(t => t.TicketType)
                                      .Include(t => t.Comments)
-                                     .Include(t => t.Attatchments)
+                                     .Include(t => t.Attachments)
                                      .Include(t => t.History)
                         .FirstOrDefaultAsync(t => t.Id == ticketId);
             }

@@ -23,22 +23,25 @@ namespace BugTrackerPrime.Controllers
         private readonly IBTProjectService _projectService;
         private readonly IBTLookupService _lookupService;
         private readonly IBTTicketService _ticketService;
+        private readonly IBTFileService _fileService;
 
-        public TicketsController(ApplicationDbContext context,
-                                 UserManager<BTUser> userManager,
-                                 IBTProjectService projectService,
-                                 IBTLookupService lookupService,
-                                 IBTTicketService ticketService)
-        {
-            _context = context;
-            _userManager = userManager;
-            _projectService = projectService;
-            _lookupService = lookupService;
-            _ticketService = ticketService;
-        }
+		public TicketsController(ApplicationDbContext context,
+								 UserManager<BTUser> userManager,
+								 IBTProjectService projectService,
+								 IBTLookupService lookupService,
+								 IBTTicketService ticketService,
+								 IBTFileService fileService)
+		{
+			_context = context;
+			_userManager = userManager;
+			_projectService = projectService;
+			_lookupService = lookupService;
+			_ticketService = ticketService;
+			_fileService = fileService;
+		}
 
-        // GET: Tickets
-        public async Task<IActionResult> Index()
+		// GET: Tickets
+		public async Task<IActionResult> Index()
         {
             var applicationDbContext = _context.Tickets.Include(t => t.DeveloperUser).Include(t => t.OwnerUser).Include(t => t.Project).Include(t => t.TicketPriority).Include(t => t.TicketStatus).Include(t => t.TicketType);
             return View(await applicationDbContext.ToListAsync());
@@ -229,8 +232,59 @@ namespace BugTrackerPrime.Controllers
             return View(ticket);
         }
 
-        // GET: Tickets/Delete/5
-        public async Task<IActionResult> Archive(int? id)
+        [HttpPost]
+        [ValidateAntiForgeryToken]
+        public async Task<IActionResult> AddTicketComment([Bind("Id,TicketId,Comment")] TicketComment ticketComment)
+        {
+            if (ModelState.IsValid)
+            {
+                try
+                {
+                    ticketComment.UserId = _userManager.GetUserId(User);
+                    ticketComment.Created = DateTimeOffset.Now;
+
+                    await _ticketService.AddTicketCommentAsync(ticketComment);
+                }
+                catch (Exception)
+                {
+
+                    throw;
+                }
+            }
+
+            return RedirectToAction("Details", new { id = ticketComment.Id });
+
+        }
+
+		[HttpPost]
+		[ValidateAntiForgeryToken]
+		public async Task<IActionResult> AddTicketAttachment([Bind("Id,FormFile,Description,TicketId")] TicketAttachment ticketAttachment)
+		{
+			string statusMessage;
+
+			if (ModelState.IsValid && ticketAttachment.FormFile != null)
+			{
+				ticketAttachment.FileData = await _fileService.ConvertFileToByteArrayAsync(ticketAttachment.FormFile);
+				ticketAttachment.FileName = ticketAttachment.FormFile.FileName;
+				ticketAttachment.FileContentType = ticketAttachment.FormFile.ContentType;
+
+				ticketAttachment.Created = DateTimeOffset.Now;
+				ticketAttachment.UserId = _userManager.GetUserId(User);
+
+				await _ticketService.AddTicketAttachmentAsync(ticketAttachment);
+				statusMessage = "Success: New attachment added to Ticket.";
+			}
+			else
+			{
+				statusMessage = "Error: Invalid data.";
+
+			}
+
+			return RedirectToAction("Details", new { id = ticketAttachment.TicketId, message = statusMessage });
+		}
+
+		// GET: Tickets/Delete/5
+		public async Task<IActionResult> Archive(int? id)
         {
             if (id == null)
             {
