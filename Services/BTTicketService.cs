@@ -311,7 +311,24 @@ namespace BugTrackerPrime.Services
             }
         }
 
-        public async Task<Ticket> GetTicketByIdAsync(int ticketId)
+		public async Task<TicketAttachment> GetTicketAttachmentByIdAsync(int ticketAttachmentId)
+		{
+			try
+			{
+				TicketAttachment ticketAttachment = await _context.TicketAttachments
+																  .Include(t => t.User)
+																  .FirstOrDefaultAsync(t => t.Id == ticketAttachmentId);
+				return ticketAttachment;
+			}
+			catch (Exception)
+			{
+
+				throw;
+			}
+		}
+
+
+		public async Task<Ticket> GetTicketByIdAsync(int ticketId)
         {
             try
             {
