@@ -14,6 +14,8 @@ using BugTrackerPrime.Models.Enums;
 using BugTrackerPrime.Services.Interfaces;
 using BugTrackerPrime.Services;
 using System.ComponentModel.Design;
+using Microsoft.AspNetCore.Authorization;
+using BugTrackerPrime.Models.ViewModels;
 
 namespace BugTrackerPrime.Controllers
 {
@@ -82,8 +84,66 @@ namespace BugTrackerPrime.Controllers
             return View(tickets);
         }
 
-        // GET: Tickets/Details/5
-        public async Task<IActionResult> Details(int? id)
+        [Authorize(Roles="Admin,ProjectManager")]
+		public async Task<IActionResult> UnassignedTickets()
+		{
+			int companyId = User.Identity.GetCompanyId().Value;
+            string btUserId = _userManager.GetUserId(User);
+
+			List<Ticket> tickets = await _ticketService.GetUnassignedTicketsAsync(companyId);
+
+            if (User.IsInRole(nameof(Roles.Admin)))
+            {
+                return View(tickets);
+            }
+            else
+            {
+                List<Ticket> pmTickets = new();
+
+                foreach (Ticket ticket in tickets)
+                {
+                    if (await _projectService.IsAssignedProjectManagerAsync(btUserId, ticket.ProjectId))
+                    {
+                        pmTickets.Add(ticket);
+                    }
+                }
+
+                return View(pmTickets);
+
+            }
+
+		}
+
+        [HttpGet]
+        public async Task<IActionResult> AssignDeveloper(int id)
+        {
+            AssignDeveloperViewModel model = new()
+            {
+                Ticket = await _ticketService.GetTicketByIdAsync(id)
+            };
+            model.Developers = new SelectList(await _projectService.GetProjectMembersByRoleAsync(model.Ticket.ProjectId, nameof(Roles.Developer)),
+                                              "Id", "FullName");
+
+            return View(model);
+        }
+
+
+        [HttpPost]
+        [ValidateAntiForgeryToken]
+        public async Task<IActionResult> AssignDeveloper(AssignDeveloperViewModel model)
+        {
+            if (model.DeveloperId != null)
+            {
+                await _ticketService.AssignTicketAsync(model.Ticket.Id, model.DeveloperId);
+            }
+
+            return RedirectToAction(nameof(AssignDeveloper), new { model.DeveloperId });
+        }
+
+
+
+		// GET: Tickets/Details/5
+		public async Task<IActionResult> Details(int? id)
         {
             if (id == null)
             {
