@@ -12,21 +12,25 @@ namespace BugTrackerPrime.Services
 {
     public class BTTicketService : IBTTicketService
     {
+        #region Properties
         private readonly ApplicationDbContext _context;
         private readonly IBTRolesService _rolesService;
-        private readonly IBTProjectService _projectService;
+        private readonly IBTProjectService _projectService; 
+        #endregion
 
-
-        // CRUD - Create 
+        #region Constructor
         public BTTicketService(ApplicationDbContext context,
-                                IBTRolesService rolesService,
-                                IBTProjectService projectService)
+                        IBTRolesService rolesService,
+                        IBTProjectService projectService)
         {
             _context = context;
             _rolesService = rolesService;
             _projectService = projectService;
-        }
+        } 
+        #endregion
 
+
+        #region Add New Ticket
         public async Task AddNewTicketAsync(Ticket ticket)
         {
             try
@@ -43,21 +47,46 @@ namespace BugTrackerPrime.Services
 
         }
 
-		public async Task AddTicketAttachmentAsync(TicketAttachment ticketAttachment)
-		{
-			try
-			{
-				await _context.AddAsync(ticketAttachment);
-				await _context.SaveChangesAsync();
-			}
-			catch (Exception)
-			{
+        #endregion
 
-				throw;
-			}
-		}
+        #region Add Ticket Attachment
+        public async Task AddTicketAttachmentAsync(TicketAttachment ticketAttachment)
+        {
+            try
+            {
+                await _context.AddAsync(ticketAttachment);
+                await _context.SaveChangesAsync();
+            }
+            catch (Exception)
+            {
 
-		public async Task ArchiveTicketAsync(Ticket ticket)
+                throw;
+            }
+        }
+
+        #endregion
+
+        #region Add Ticket Comment
+        public async Task AddTicketCommentAsync(TicketComment ticketComment)
+        {
+            try
+            {
+                await _context.AddAsync(ticketComment);
+                await _context.SaveChangesAsync();
+            }
+            catch (Exception)
+            {
+
+                throw;
+            }
+
+
+        }
+
+        #endregion
+
+        #region Archive Ticket
+        public async Task ArchiveTicketAsync(Ticket ticket)
         {
             try
             {
@@ -74,22 +103,9 @@ namespace BugTrackerPrime.Services
 
         }
 
-        #region Add Ticket Comment
-        public async Task AddTicketCommentAsync(TicketComment ticketComment)
-        {
-            try
-            {
-                await _context.AddAsync(ticketComment);
-                await _context.SaveChangesAsync();
-            }
-            catch (Exception)
-            {
-
-                throw;
-            }
-        }
-
         #endregion
+
+        #region Assign Ticket
         public async Task AssignTicketAsync(int ticketId, string userId)
         {
             Ticket ticket = await _context.Tickets.FirstOrDefaultAsync(t => t.Id == ticketId);
@@ -118,6 +134,10 @@ namespace BugTrackerPrime.Services
             }
         }
 
+        #endregion
+        
+
+        #region Get All Tickets By Company
         public async Task<List<Ticket>> GetAllTicketsByCompanyAsync(int companyId)
         {
             try
@@ -144,6 +164,9 @@ namespace BugTrackerPrime.Services
             }
         }
 
+        #endregion
+
+        #region Get All Tickets By Priority
         public async Task<List<Ticket>> GetAllTicketsByPriorityAsync(int companyId, string priorityName)
         {
             int priorityId = (await LookupTicketPriorityIdAsync(priorityName)).Value;
@@ -174,6 +197,9 @@ namespace BugTrackerPrime.Services
             }
         }
 
+        #endregion
+
+        #region Get All Tickets By Status
         public async Task<List<Ticket>> GetAllTicketsByStatusAsync(int companyId, string statusName)
         {
 
@@ -204,6 +230,9 @@ namespace BugTrackerPrime.Services
             }
         }
 
+        #endregion
+
+        #region Get All Tickets By Type
         public async Task<List<Ticket>> GetAllTicketsByTypeAsync(int companyId, string typeName)
         {
             int typeId = (await LookupTicketTypeIdAsync(typeName)).Value;
@@ -233,6 +262,10 @@ namespace BugTrackerPrime.Services
             }
         }
 
+        #endregion
+
+
+        #region Get Archived Tickets
         public async Task<List<Ticket>> GetArchivedTicketsAsync(int companyId)
         {
             try
@@ -247,6 +280,10 @@ namespace BugTrackerPrime.Services
             }
         }
 
+        #endregion
+
+
+        #region Get Project Tickets By Priority
         public async Task<List<Ticket>> GetProjectTicketsByPriorityAsync(string priorityName, int companyId, int projectId)
         {
             List<Ticket> tickets = new();
@@ -263,6 +300,9 @@ namespace BugTrackerPrime.Services
             }
         }
 
+        #endregion
+
+        #region Get Project Ticket By Role
         public async Task<List<Ticket>> GetProjectTicketsByRoleAsync(string role, string userId, int projectId, int companyId)
         {
             List<Ticket> tickets = new();
@@ -279,6 +319,9 @@ namespace BugTrackerPrime.Services
             }
         }
 
+        #endregion
+
+        #region Get Project Tickets By Status
         public async Task<List<Ticket>> GetProjectTicketsByStatusAsync(string statusName, int companyId, int projectId)
         {
             List<Ticket> tickets = new();
@@ -295,6 +338,9 @@ namespace BugTrackerPrime.Services
             }
         }
 
+        #endregion
+
+        #region Get Project Tickets By Type
         public async Task<List<Ticket>> GetProjectTicketsByTypeAsync(string typeName, int companyId, int projectId)
         {
             List<Ticket> tickets = new();
@@ -311,24 +357,52 @@ namespace BugTrackerPrime.Services
             }
         }
 
-		public async Task<TicketAttachment> GetTicketAttachmentByIdAsync(int ticketAttachmentId)
-		{
-			try
-			{
-				TicketAttachment ticketAttachment = await _context.TicketAttachments
-																  .Include(t => t.User)
-																  .FirstOrDefaultAsync(t => t.Id == ticketAttachmentId);
-				return ticketAttachment;
-			}
-			catch (Exception)
-			{
+        #endregion
 
-				throw;
-			}
-		}
+        #region Get Ticket As No Tracking
+        public async Task<Ticket> GetTicketAsNoTrackingAsync(int ticketId)
+        {
+            try
+            {
+                return await _context.Tickets
+                                     .Include(t => t.DeveloperUser)
+                                     .Include(t => t.Project)
+                                     .Include(t => t.TicketPriority)
+                                     .Include(t => t.TicketStatus)
+                                     .Include(t => t.TicketType)
+                                     .AsNoTracking()
+                                    .FirstOrDefaultAsync(t => t.Id == ticketId);
+            }
+            catch (Exception)
+            {
 
+                throw;
+            }
+        }
 
-		public async Task<Ticket> GetTicketByIdAsync(int ticketId)
+        #endregion
+
+        #region Get Ticket Attachment By Id
+        public async Task<TicketAttachment> GetTicketAttachmentByIdAsync(int ticketAttachmentId)
+        {
+            try
+            {
+                TicketAttachment ticketAttachment = await _context.TicketAttachments
+                                                                  .Include(t => t.User)
+                                                                  .FirstOrDefaultAsync(t => t.Id == ticketAttachmentId);
+                return ticketAttachment;
+            }
+            catch (Exception)
+            {
+
+                throw;
+            }
+        }
+
+        #endregion
+
+        #region Get Ticket By Id
+        public async Task<Ticket> GetTicketByIdAsync(int ticketId)
         {
             try
             {
@@ -351,6 +425,9 @@ namespace BugTrackerPrime.Services
             }
         }
 
+        #endregion
+
+        #region Get Ticket Developer
         public async Task<BTUser> GetTicketDeveloperAsync(int ticketId, int companyId)
         {
             BTUser developer = new();
@@ -373,6 +450,9 @@ namespace BugTrackerPrime.Services
             }
         }
 
+        #endregion
+
+        #region Get Tickets By Role
         public async Task<List<Ticket>> GetTicketsByRoleAsync(string role, string userId, int companyId)
         {
             List<Ticket> tickets = new();
@@ -405,6 +485,9 @@ namespace BugTrackerPrime.Services
             }
         }
 
+        #endregion
+
+        #region Get Tickets By User Id
         public async Task<List<Ticket>> GetTicketsByUserIdAsync(string userId, int companyId)
         {
             BTUser bTUser = await _context.Users.FirstOrDefaultAsync(u => u.Id == userId);
@@ -446,6 +529,9 @@ namespace BugTrackerPrime.Services
             }
         }
 
+        #endregion
+
+
         #region Get Unassigned Tickets
         public async Task<List<Ticket>> GetUnassignedTicketsAsync(int companyId)
         {
@@ -464,6 +550,9 @@ namespace BugTrackerPrime.Services
         }
 
         #endregion
+
+
+        #region Look up Ticket Priority Id
         public async Task<int?> LookupTicketPriorityIdAsync(string priorityName)
         {
             try
@@ -477,6 +566,9 @@ namespace BugTrackerPrime.Services
             }
         }
 
+        #endregion
+
+        #region Look up Ticket Status Id
         public async Task<int?> LookupTicketStatusIdAsync(string statusName)
         {
             try
@@ -490,6 +582,9 @@ namespace BugTrackerPrime.Services
             }
         }
 
+        #endregion
+
+        #region Look up Ticket Type Id
         public async Task<int?> LookupTicketTypeIdAsync(string typeName)
         {
             try
@@ -503,6 +598,10 @@ namespace BugTrackerPrime.Services
             }
         }
 
+        #endregion
+
+
+        #region Update Ticket
         public async Task UpdateTicketAsync(Ticket ticket)
         {
 
@@ -517,5 +616,7 @@ namespace BugTrackerPrime.Services
                 throw;
             }
         }
+        #endregion
     }
+
 }

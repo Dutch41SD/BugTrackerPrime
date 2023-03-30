@@ -17,6 +17,22 @@
 }
 
 <h1>Ticket Details</h1>
+@if (!string.IsNullOrEmpty(Model.DeveloperUserId))
+{
+	<a href="javascript:void(0);">
+		@if (Model.DeveloperUser?.AvatarFileData != null)
+		{
+			<img class="media-object" src="data:image/*;base64,@(Convert.ToBase64String(btUser.AvatarFileData))" alt=""/>
+		}
+		else
+		{
+			<img class="media-object" src="https://cdn.icon-icons.com/icons2/1378/PNG/512/avatardefault_92824.png" alt="" style="width:30px;height:30px">
+		}
+	</a>
+	<span class="text-muted" style="font-size:x-small;">
+		Developer: <strong>@Model.DeveloperUser.FullName</strong>
+	</span>
+}
 
 <div>
 	<div classxfont-weighteighteightgetainer-fluid">
@@ -205,11 +221,24 @@
                                     <h6>@history.Description</h6>
                                     <span>By: <a href="" title="@history.User.FullName">@history.User.FullName</a></span>
                                     <div class="">
-                                        <p>The ticket <b>@history.Property</b> was edited</p>
-                                        <p>@($"Previous {history.Property}: {history.OldValue}")</p>
-                                        <p>@($"Current {history.Property}: {history.NewValue}")</p>
+										@if (history.Description.Contains("New Ticket Created"))
+										{
+											<p>A Ticket was added.</p>
+										}
+										else if(history.Property.Equals("TicketComment") || history.Property.Equals("TicketAttachment"))
+										{
+											<p>A <b>@history.Property</b> was added.</p>
+										}
+										else
+										{
+											<p>The ticket <b>@history.Property</b> was edited</p>
+											<p>@($"Previous {history.Property}:  ") <span style="color:red">@history.OldValue</span></p>
+											<p>@($"Current {history.Property}:  ") <span style="color:green">@history.NewValue</span></p>
+										}
+										
                                     </div>
                                 </div>
+								<hr />
                             }
 
 						</div>

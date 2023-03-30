@@ -19,21 +19,24 @@ using BugTrackerPrime.Models.ViewModels;
 
 namespace BugTrackerPrime.Controllers
 {
-    public class TicketsController : Controller
-    {
-        private readonly ApplicationDbContext _context;
-        private readonly UserManager<BTUser> _userManager;
-        private readonly IBTProjectService _projectService;
-        private readonly IBTLookupService _lookupService;
-        private readonly IBTTicketService _ticketService;
-        private readonly IBTFileService _fileService;
+	public class TicketsController : Controller
+	{
+		private readonly ApplicationDbContext _context;
+		private readonly UserManager<BTUser> _userManager;
+		private readonly IBTProjectService _projectService;
+		private readonly IBTLookupService _lookupService;
+		private readonly IBTTicketService _ticketService;
+		private readonly IBTFileService _fileService;
+		private readonly IBTTicketHistoryService _historyService;
+
 
 		public TicketsController(ApplicationDbContext context,
 								 UserManager<BTUser> userManager,
 								 IBTProjectService projectService,
 								 IBTLookupService lookupService,
 								 IBTTicketService ticketService,
-								 IBTFileService fileService)
+								 IBTFileService fileService,
+								 IBTTicketHistoryService historyService)
 		{
 			_context = context;
 			_userManager = userManager;
@@ -41,294 +44,332 @@ namespace BugTrackerPrime.Controllers
 			_lookupService = lookupService;
 			_ticketService = ticketService;
 			_fileService = fileService;
+			_historyService = historyService;
 		}
 
 		// GET: Tickets
 		public async Task<IActionResult> Index()
-        {
-            var applicationDbContext = _context.Tickets.Include(t => t.DeveloperUser).Include(t => t.OwnerUser).Include(t => t.Project).Include(t => t.TicketPriority).Include(t => t.TicketStatus).Include(t => t.TicketType);
-            return View(await applicationDbContext.ToListAsync());
-        }
+		{
+			var applicationDbContext = _context.Tickets.Include(t => t.DeveloperUser).Include(t => t.OwnerUser).Include(t => t.Project).Include(t => t.TicketPriority).Include(t => t.TicketStatus).Include(t => t.TicketType);
+			return View(await applicationDbContext.ToListAsync());
+		}
 
-        public async Task<IActionResult> MyTickets()
-        {
-            BTUser btUser = await _userManager.GetUserAsync(User);
+		public async Task<IActionResult> MyTickets()
+		{
+			BTUser btUser = await _userManager.GetUserAsync(User);
 
-            List<Ticket> tickets = await _ticketService.GetTicketsByUserIdAsync(btUser.Id, btUser.CompanyId);
-            
-            return View(tickets);
-        }
+			List<Ticket> tickets = await _ticketService.GetTicketsByUserIdAsync(btUser.Id, btUser.CompanyId);
 
-        public async Task<IActionResult> AllTickets()
-        {
-            int companyId = User.Identity.GetCompanyId().Value;
+			return View(tickets);
+		}
 
-            List<Ticket> tickets = await _ticketService.GetAllTicketsByCompanyAsync(companyId);
+		public async Task<IActionResult> AllTickets()
+		{
+			int companyId = User.Identity.GetCompanyId().Value;
 
-            if (User.IsInRole(nameof(Roles.Developer)) || User.IsInRole(nameof(Roles.Submitter)))
-            {
-                return View(tickets.Where(t => t.Archived == false));
-            }
-            else
-            {
-                return View(tickets);
-            }
-        }
+			List<Ticket> tickets = await _ticketService.GetAllTicketsByCompanyAsync(companyId);
 
-        public async Task<IActionResult> ArchivedTickets()
-        {
-            int companyId = User.Identity.GetCompanyId().Value;
+			if (User.IsInRole(nameof(Roles.Developer)) || User.IsInRole(nameof(Roles.Submitter)))
+			{
+				return View(tickets.Where(t => t.Archived == false));
+			}
+			else
+			{
+				return View(tickets);
+			}
+		}
 
-            List<Ticket> tickets = await _ticketService.GetArchivedTicketsAsync(companyId);
+		public async Task<IActionResult> ArchivedTickets()
+		{
+			int companyId = User.Identity.GetCompanyId().Value;
 
-            return View(tickets);
-        }
+			List<Ticket> tickets = await _ticketService.GetArchivedTicketsAsync(companyId);
 
-        [Authorize(Roles="Admin,ProjectManager")]
+			return View(tickets);
+		}
+
+		[Authorize(Roles = "Admin,ProjectManager")]
 		public async Task<IActionResult> UnassignedTickets()
 		{
 			int companyId = User.Identity.GetCompanyId().Value;
-            string btUserId = _userManager.GetUserId(User);
+			string btUserId = _userManager.GetUserId(User);
 
 			List<Ticket> tickets = await _ticketService.GetUnassignedTicketsAsync(companyId);
 
-            if (User.IsInRole(nameof(Roles.Admin)))
-            {
-                return View(tickets);
-            }
-            else
-            {
-                List<Ticket> pmTickets = new();
+			if (User.IsInRole(nameof(Roles.Admin)))
+			{
+				return View(tickets);
+			}
+			else
+			{
+				List<Ticket> pmTickets = new();
 
-                foreach (Ticket ticket in tickets)
-                {
-                    if (await _projectService.IsAssignedProjectManagerAsync(btUserId, ticket.ProjectId))
-                    {
-                        pmTickets.Add(ticket);
-                    }
-                }
+				foreach (Ticket ticket in tickets)
+				{
+					if (await _projectService.IsAssignedProjectManagerAsync(btUserId, ticket.ProjectId))
+					{
+						pmTickets.Add(ticket);
+					}
+				}
 
-                return View(pmTickets);
+				return View(pmTickets);
 
-            }
+			}
 
 		}
 
-        [HttpGet]
-        public async Task<IActionResult> AssignDeveloper(int id)
-        {
-            AssignDeveloperViewModel model = new()
-            {
-                Ticket = await _ticketService.GetTicketByIdAsync(id)
-            };
-            model.Developers = new SelectList(await _projectService.GetProjectMembersByRoleAsync(model.Ticket.ProjectId, nameof(Roles.Developer)),
-                                              "Id", "FullName");
+		[HttpGet]
+		public async Task<IActionResult> AssignDeveloper(int id)
+		{
+			AssignDeveloperViewModel model = new()
+			{
+				Ticket = await _ticketService.GetTicketByIdAsync(id)
+			};
+			model.Developers = new SelectList(await _projectService.GetProjectMembersByRoleAsync(model.Ticket.ProjectId, nameof(Roles.Developer)),
+											  "Id", "FullName");
 
-            return View(model);
-        }
+			return View(model);
+		}
 
 
-        [HttpPost]
-        [ValidateAntiForgeryToken]
-        public async Task<IActionResult> AssignDeveloper(AssignDeveloperViewModel model)
-        {
-            if (model.DeveloperId != null)
-            {
-                await _ticketService.AssignTicketAsync(model.Ticket.Id, model.DeveloperId);
-            }
+		[HttpPost]
+		[ValidateAntiForgeryToken]
+		public async Task<IActionResult> AssignDeveloper(AssignDeveloperViewModel model)
+		{
+			if (model.DeveloperId != null)
+			{
+				BTUser btUser = await _userManager.GetUserAsync(User);
+				// oldTicket
+				Ticket oldTicket = await _ticketService.GetTicketAsNoTrackingAsync(model.Ticket.Id);
 
-            return RedirectToAction(nameof(AssignDeveloper), new { model.DeveloperId });
-        }
+				try
+				{
+					await _ticketService.AssignTicketAsync(model.Ticket.Id, model.DeveloperId);
+
+				}
+				catch (Exception)
+				{
+
+					throw;
+				}
+
+				// newTicket
+				Ticket newTicket = await _ticketService.GetTicketAsNoTrackingAsync(model.Ticket.Id);
+				await _historyService.AddHistoryAsync(oldTicket, newTicket, btUser.Id);
+
+				return RedirectToAction(nameof(Details), new { id = model.DeveloperId });
+			}
+
+			return RedirectToAction(nameof(AssignDeveloper), new { model.DeveloperId });
+		}
 
 
 
 		// GET: Tickets/Details/5
 		public async Task<IActionResult> Details(int? id)
-        {
-            if (id == null)
-            {
-                return NotFound();
-            }
+		{
+			if (id == null)
+			{
+				return NotFound();
+			}
 
 
 
-            Ticket ticket = await _ticketService.GetTicketByIdAsync(id.Value);
+			Ticket ticket = await _ticketService.GetTicketByIdAsync(id.Value);
 
 
-            if (ticket == null)
-            {
-                return NotFound();
-            }
+			if (ticket == null)
+			{
+				return NotFound();
+			}
 
-            return View(ticket);
-        }
+			return View(ticket);
+		}
 
-        #region Show File
-        public async Task<IActionResult> ShowFile(int id)
-        {
-            TicketAttachment ticketAttachment = await _ticketService.GetTicketAttachmentByIdAsync(id);
-            string fileName = ticketAttachment.FileName;
-            byte[] fileData = ticketAttachment.FileData;
-            string ext = Path.GetExtension(fileName).Replace(".", "");
+		#region Show File
+		public async Task<IActionResult> ShowFile(int id)
+		{
+			TicketAttachment ticketAttachment = await _ticketService.GetTicketAttachmentByIdAsync(id);
+			string fileName = ticketAttachment.FileName;
+			byte[] fileData = ticketAttachment.FileData;
+			string ext = Path.GetExtension(fileName).Replace(".", "");
 
-            Response.Headers.Add("Content-Disposition", $"inline; filename={fileName}");
-            return File(fileData, $"application/{ext}");
-        }
+			Response.Headers.Add("Content-Disposition", $"inline; filename={fileName}");
+			return File(fileData, $"application/{ext}");
+		}
 
-        #endregion
-        // GET: Tickets/Create
-        public async Task<IActionResult> Create()
-        {
-            BTUser btUser = await _userManager.GetUserAsync(User);
+		#endregion
 
-            int companyId = User.Identity.GetCompanyId().Value;
+		// GET: Tickets/Create
+		public async Task<IActionResult> Create()
+		{
+			BTUser btUser = await _userManager.GetUserAsync(User);
 
-            if (User.IsInRole(nameof(Roles.Admin)))
-            {
-                ViewData["ProjectId"] = new SelectList(await _projectService.GetAllProjectsByCompanyAsync(companyId), "Id", "Name");
-            }
-            else
-            {
-                ViewData["ProjectId"] = new SelectList(await _projectService.GetAllProjectsByCompanyAsync(btUser.Id), "Id", "Name");
-            }
+			int companyId = User.Identity.GetCompanyId().Value;
 
-            ViewData["TicketPriorityId"] = new SelectList(await _lookupService.GetTicketPrioritiesAsync(), "Id", "Name");
-            ViewData["TicketTypeId"] = new SelectList(await _lookupService.GetTicketTypeAsync(), "Id", "Name");
+			if (User.IsInRole(nameof(Roles.Admin)))
+			{
+				ViewData["ProjectId"] = new SelectList(await _projectService.GetAllProjectsByCompanyAsync(companyId), "Id", "Name");
+			}
+			else
+			{
+				ViewData["ProjectId"] = new SelectList(await _projectService.GetAllProjectsByCompanyAsync(btUser.Id), "Id", "Name");
+			}
 
-            return View();
-        }
+			ViewData["TicketPriorityId"] = new SelectList(await _lookupService.GetTicketPrioritiesAsync(), "Id", "Name");
+			ViewData["TicketTypeId"] = new SelectList(await _lookupService.GetTicketTypeAsync(), "Id", "Name");
 
-        // POST: Tickets/Create
-        // To protect from overposting attacks, enable the specific properties you want to bind to.
-        // For more details, see http://go.microsoft.com/fwlink/?LinkId=317598.
-        [HttpPost]
-        [ValidateAntiForgeryToken]
-        public async Task<IActionResult> Create([Bind("Id,Title,Description,ProjectId,TicketTypeId,TicketPriorityId")] Ticket ticket)
-        {
-            BTUser btUser = await _userManager.GetUserAsync(User);
+			return View();
+		}
 
-            if (ModelState.IsValid)
-            {
-                ticket.Created = DateTimeOffset.Now;
-                ticket.OwnerUserId = btUser.Id;
+		// POST: Tickets/Create
+		// To protect from overposting attacks, enable the specific properties you want to bind to.
+		// For more details, see http://go.microsoft.com/fwlink/?LinkId=317598.
+		[HttpPost]
+		[ValidateAntiForgeryToken]
+		public async Task<IActionResult> Create([Bind("Id,Title,Description,ProjectId,TicketTypeId,TicketPriorityId")] Ticket ticket)
+		{
+			BTUser btUser = await _userManager.GetUserAsync(User);
 
-                ticket.TicketStatusId = (await _ticketService.LookupTicketStatusIdAsync(nameof(BTTicketStatus.New))).Value;
+			if (ModelState.IsValid)
+			{
+				try
+				{
+					ticket.Created = DateTimeOffset.Now;
+					ticket.OwnerUserId = btUser.Id;
 
-                await _ticketService.AddNewTicketAsync(ticket);
+					ticket.TicketStatusId = (await _ticketService.LookupTicketStatusIdAsync(nameof(BTTicketStatus.New))).Value;
 
-                //TODO : Add in Ticket History
+					await _ticketService.AddNewTicketAsync(ticket);
 
-                //TODO : Add in Ticket Notification
+					//TODO : Add in Ticket History
+					Ticket newTicket = await _ticketService.GetTicketAsNoTrackingAsync(ticket.Id);
+					await _historyService.AddHistoryAsync(null, newTicket, btUser.Id);
 
-                return RedirectToAction(nameof(Index));
-            }
+					//TODO : Add in Ticket Notification
 
-            if (User.IsInRole(nameof(Roles.Admin)))
-            {
-                ViewData["ProjectId"] = new SelectList(await _projectService.GetAllProjectsByCompanyAsync(btUser.CompanyId), "Id", "Name");
-            }
-            else
-            {
-                ViewData["ProjectId"] = new SelectList(await _projectService.GetAllProjectsByCompanyAsync(btUser.Id), "Id", "Name");
-            }
+				}
+				catch (Exception)
+				{
 
-            ViewData["TicketPriorityId"] = new SelectList(await _lookupService.GetTicketPrioritiesAsync(), "Id", "Name");
-            ViewData["TicketTypeId"] = new SelectList(await _lookupService.GetTicketTypeAsync(), "Id", "Name");
-            return View(ticket);
-        }
+					throw;
+				}
+				return RedirectToAction(nameof(Index));
+			}
 
-        // GET: Tickets/Edit/5
-        public async Task<IActionResult> Edit(int? id)
-        {
-            if (id == null)
-            {
-                return NotFound();
-            }
+			if (User.IsInRole(nameof(Roles.Admin)))
+			{
+				ViewData["ProjectId"] = new SelectList(await _projectService.GetAllProjectsByCompanyAsync(btUser.CompanyId), "Id", "Name");
+			}
+			else
+			{
+				ViewData["ProjectId"] = new SelectList(await _projectService.GetAllProjectsByCompanyAsync(btUser.Id), "Id", "Name");
+			}
 
-            //var ticket = await _context.Tickets.FindAsync(id);
+			ViewData["TicketPriorityId"] = new SelectList(await _lookupService.GetTicketPrioritiesAsync(), "Id", "Name");
+			ViewData["TicketTypeId"] = new SelectList(await _lookupService.GetTicketTypeAsync(), "Id", "Name");
+			return View(ticket);
+		}
 
-            Ticket ticket = await _ticketService.GetTicketByIdAsync(id.Value);
+		// GET: Tickets/Edit/5
+		public async Task<IActionResult> Edit(int? id)
+		{
+			if (id == null)
+			{
+				return NotFound();
+			}
 
-            if (ticket == null)
-            {
-                return NotFound();
-            }
+			//var ticket = await _context.Tickets.FindAsync(id);
 
-            ViewData["TicketPriorityId"] = new SelectList(await _lookupService.GetTicketPrioritiesAsync(), "Id", "Id", ticket.TicketPriorityId);
-            ViewData["TicketStatusId"] = new SelectList(await _lookupService.GetTicketStatusesAsync(), "Id", "Id", ticket.TicketStatusId);
-            ViewData["TicketTypeId"] = new SelectList(await _lookupService.GetTicketTypeAsync(), "Id", "Id", ticket.TicketTypeId);
+			Ticket ticket = await _ticketService.GetTicketByIdAsync(id.Value);
 
-            return View(ticket);
-        }
+			if (ticket == null)
+			{
+				return NotFound();
+			}
 
-        // POST: Tickets/Edit/5
-        // To protect from overposting attacks, enable the specific properties you want to bind to.
-        // For more details, see http://go.microsoft.com/fwlink/?LinkId=317598.
-        [HttpPost]
-        [ValidateAntiForgeryToken]
-        public async Task<IActionResult> Edit(int id, [Bind("Id,Title,Description,Created,Updated,Archived,ProjectId,TicketTypeId,TicketPriorityId,TicketStatusId,OwnerUserId,DeveloperUserId")] Ticket ticket)
-        {
-            if (id != ticket.Id)
-            {
-                return NotFound();
-            }
+			ViewData["TicketPriorityId"] = new SelectList(await _lookupService.GetTicketPrioritiesAsync(), "Id", "Name", ticket.TicketPriorityId);
+			ViewData["TicketStatusId"] = new SelectList(await _lookupService.GetTicketStatusesAsync(), "Id", "Name", ticket.TicketStatusId);
+			ViewData["TicketTypeId"] = new SelectList(await _lookupService.GetTicketTypeAsync(), "Id", "Name", ticket.TicketTypeId);
 
-            if (ModelState.IsValid)
-            {
-                BTUser btUser = await _userManager.GetUserAsync(User);
+			return View(ticket);
+		}
 
-                try
-                {
-                    ticket.Updated = DateTimeOffset.Now;
-                    await _ticketService.UpdateTicketAsync(ticket);
-                }
-                catch (DbUpdateConcurrencyException)
-                {
-                    if (!await TicketExists(ticket.Id))
-                    {
-                        return NotFound();
-                    }
-                    else
-                    {
-                        throw;
-                    }
-                }
-                
-                // TODO : Add Ticket Gistory
-                return RedirectToAction(nameof(Index));
-            }
+		// POST: Tickets/Edit/5
+		// To protect from overposting attacks, enable the specific properties you want to bind to.
+		// For more details, see http://go.microsoft.com/fwlink/?LinkId=317598.
+		[HttpPost]
+		[ValidateAntiForgeryToken]
+		public async Task<IActionResult> Edit(int id, [Bind("Id,Title,Description,Created,Updated,Archived,ProjectId,TicketTypeId,TicketPriorityId,TicketStatusId,OwnerUserId,DeveloperUserId")] Ticket ticket)
+		{
+			if (id != ticket.Id)
+			{
+				return NotFound();
+			}
+
+			if (ModelState.IsValid)
+			{
+				BTUser btUser = await _userManager.GetUserAsync(User);
+				Ticket oldTicket = await _ticketService.GetTicketAsNoTrackingAsync(ticket.Id);
+
+				try
+				{
+					ticket.Updated = DateTimeOffset.Now;
+					await _ticketService.UpdateTicketAsync(ticket);
+				}
+				catch (DbUpdateConcurrencyException)
+				{
+					if (!await TicketExists(ticket.Id))
+					{
+						return NotFound();
+					}
+					else
+					{
+						throw;
+					}
+				}
+
+				// TODO : Add Ticket History
+				Ticket newTicket = await _ticketService.GetTicketAsNoTrackingAsync(ticket.Id);
+				await _historyService.AddHistoryAsync(oldTicket, newTicket, btUser.Id);
+
+				return RedirectToAction(nameof(Index));
+			}
 
 
-            ViewData["TicketPriorityId"] = new SelectList(await _lookupService.GetTicketPrioritiesAsync(), "Id", "Id", ticket.TicketPriorityId);
-            ViewData["TicketStatusId"] = new SelectList(await _lookupService.GetTicketStatusesAsync(), "Id", "Id", ticket.TicketStatusId);
-            ViewData["TicketTypeId"] = new SelectList(await _lookupService.GetTicketTypeAsync(), "Id", "Id", ticket.TicketTypeId);
+			ViewData["TicketPriorityId"] = new SelectList(await _lookupService.GetTicketPrioritiesAsync(), "Id", "Name", ticket.TicketPriorityId);
+			ViewData["TicketStatusId"] = new SelectList(await _lookupService.GetTicketStatusesAsync(), "Id", "Name", ticket.TicketStatusId);
+			ViewData["TicketTypeId"] = new SelectList(await _lookupService.GetTicketTypeAsync(), "Id", "Name", ticket.TicketTypeId);
 
-            return View(ticket);
-        }
+			return View(ticket);
+		}
 
-        [HttpPost]
-        [ValidateAntiForgeryToken]
-        public async Task<IActionResult> AddTicketComment([Bind("Id,TicketId,Comment")] TicketComment ticketComment)
-        {
-            if (ModelState.IsValid)
-            {
-                try
-                {
-                    ticketComment.UserId = _userManager.GetUserId(User);
-                    ticketComment.Created = DateTimeOffset.Now;
+		[HttpPost]
+		[ValidateAntiForgeryToken]
+		public async Task<IActionResult> AddTicketComment([Bind("Id,TicketId,Comment")] TicketComment ticketComment)
+		{
+			if (ModelState.IsValid)
+			{
+				try
+				{
+					ticketComment.UserId = _userManager.GetUserId(User);
+					ticketComment.Created = DateTimeOffset.Now;
 
-                    await _ticketService.AddTicketCommentAsync(ticketComment);
-                }
-                catch (Exception)
-                {
+					await _ticketService.AddTicketCommentAsync(ticketComment);
 
-                    throw;
-                }
-            }
+					// Add History
+					await _historyService.AddHistoryAsync(ticketComment.TicketId, nameof(TicketComment), ticketComment.UserId);
+				}
+				catch (Exception)
+				{
 
-            return RedirectToAction("Details", new { id = ticketComment.Id });
+					throw;
+				}
+			}
 
-        }
+			return RedirectToAction("Details", new { id = ticketComment.TicketId });
+
+		}
 
 		[HttpPost]
 		[ValidateAntiForgeryToken]
@@ -338,14 +379,26 @@ namespace BugTrackerPrime.Controllers
 
 			if (ModelState.IsValid && ticketAttachment.FormFile != null)
 			{
-				ticketAttachment.FileData = await _fileService.ConvertFileToByteArrayAsync(ticketAttachment.FormFile);
-				ticketAttachment.FileName = ticketAttachment.FormFile.FileName;
-				ticketAttachment.FileContentType = ticketAttachment.FormFile.ContentType;
+				try
+				{
+					ticketAttachment.FileData = await _fileService.ConvertFileToByteArrayAsync(ticketAttachment.FormFile);
+					ticketAttachment.FileName = ticketAttachment.FormFile.FileName;
+					ticketAttachment.FileContentType = ticketAttachment.FormFile.ContentType;
 
-				ticketAttachment.Created = DateTimeOffset.Now;
-				ticketAttachment.UserId = _userManager.GetUserId(User);
+					ticketAttachment.Created = DateTimeOffset.Now;
+					ticketAttachment.UserId = _userManager.GetUserId(User);
 
-				await _ticketService.AddTicketAttachmentAsync(ticketAttachment);
+					await _ticketService.AddTicketAttachmentAsync(ticketAttachment);
+
+					// Add History
+					await _historyService.AddHistoryAsync(ticketAttachment.TicketId, nameof(TicketAttachment), ticketAttachment.UserId);
+
+				}
+				catch (Exception)
+				{
+
+					throw;
+				}
 				statusMessage = "Success: New attachment added to Ticket.";
 			}
 			else
@@ -359,72 +412,72 @@ namespace BugTrackerPrime.Controllers
 
 		// GET: Tickets/Delete/5
 		public async Task<IActionResult> Archive(int? id)
-        {
-            if (id == null)
-            {
-                return NotFound();
-            }
+		{
+			if (id == null)
+			{
+				return NotFound();
+			}
 
-            Ticket ticket = await _ticketService.GetTicketByIdAsync(id.Value);
+			Ticket ticket = await _ticketService.GetTicketByIdAsync(id.Value);
 
-            if (ticket == null)
-            {
-                return NotFound();
-            }
+			if (ticket == null)
+			{
+				return NotFound();
+			}
 
-            return View(ticket);
-        }
+			return View(ticket);
+		}
 
-        // POST: Tickets/Delete/5
-        [HttpPost, ActionName("Archive")]
-        [ValidateAntiForgeryToken]
-        public async Task<IActionResult> ArchiveConfirmed(int id)
-        {
-            Ticket ticket = await _ticketService.GetTicketByIdAsync(id);
-            ticket.Archived = true;
-            await _ticketService.UpdateTicketAsync(ticket);
-
-
-            return RedirectToAction(nameof(Index));
-        }
-
-        // GET: Tickets/Delete/5
-        public async Task<IActionResult> Restore(int? id)
-        {
-            if (id == null)
-            {
-                return NotFound();
-            }
-
-            Ticket ticket = await _ticketService.GetTicketByIdAsync(id.Value);
-
-            if (ticket == null)
-            {
-                return NotFound();
-            }
-
-            return View(ticket);
-        }
-
-        // POST: Tickets/Delete/5
-        [HttpPost, ActionName("Restore")]
-        [ValidateAntiForgeryToken]
-        public async Task<IActionResult> RestoreConfirmed(int id)
-        {
-            Ticket ticket = await _ticketService.GetTicketByIdAsync(id);
-            ticket.Archived = false;
-            await _ticketService.UpdateTicketAsync(ticket);
+		// POST: Tickets/Delete/5
+		[HttpPost, ActionName("Archive")]
+		[ValidateAntiForgeryToken]
+		public async Task<IActionResult> ArchiveConfirmed(int id)
+		{
+			Ticket ticket = await _ticketService.GetTicketByIdAsync(id);
+			ticket.Archived = true;
+			await _ticketService.UpdateTicketAsync(ticket);
 
 
-            return RedirectToAction(nameof(Index));
-        }
+			return RedirectToAction(nameof(Index));
+		}
+
+		// GET: Tickets/Delete/5
+		public async Task<IActionResult> Restore(int? id)
+		{
+			if (id == null)
+			{
+				return NotFound();
+			}
+
+			Ticket ticket = await _ticketService.GetTicketByIdAsync(id.Value);
+
+			if (ticket == null)
+			{
+				return NotFound();
+			}
+
+			return View(ticket);
+		}
+
+		// POST: Tickets/Delete/5
+		[HttpPost, ActionName("Restore")]
+		[ValidateAntiForgeryToken]
+		public async Task<IActionResult> RestoreConfirmed(int id)
+		{
+			Ticket ticket = await _ticketService.GetTicketByIdAsync(id);
+			ticket.Archived = false;
+			await _ticketService.UpdateTicketAsync(ticket);
 
 
-        private async Task<bool> TicketExists(int id)
-        {
-            int companyId = User.Identity.GetCompanyId().Value;
+			return RedirectToAction(nameof(Index));
+		}
 
-            return (await _ticketService.GetAllTicketsByCompanyAsync(companyId)).Any(t => t.Id == id);
-        }
-    }
+
+		private async Task<bool> TicketExists(int id)
+		{
+			int companyId = User.Identity.GetCompanyId().Value;
+
+			return (await _ticketService.GetAllTicketsByCompanyAsync(companyId)).Any(t => t.Id == id);
+		}
+	}
 }

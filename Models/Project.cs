@@ -1,4 +1,5 @@
 ﻿using Microsoft.AspNetCore.Http;
+using Microsoft.CodeAnalysis.CSharp.Syntax;
 using System;
 using System.Collections.Generic;
 using System.ComponentModel;
@@ -36,8 +37,10 @@ namespace BugTrackerPrime.Models
         [NotMapped]
         [DataType(DataType.Upload)]
         public IFormFile ImageFormFile { get; set; }
+
         [DisplayName("File Name")]
         public string ImageFileName { get; set; }
+
         public byte[] ImageFileData { get; set; }
 
         [DisplayName("File Extention")]
@@ -55,5 +58,7 @@ namespace BugTrackerPrime.Models
 
         [NotMapped]
         public object Members { get; internal set; }
+
+
     }
 }
