@@ -54,6 +54,7 @@ namespace BugTrackerPrime.Services.Interfaces
         public Task RestoreProjectAsync(Project project);
 
         public Task UpdateProjectAsync(Project project);
-
+		Task<IEnumerable> GetAllProjectsByCompanyAsync(string id);
+		Task<List<Project>> GetUnassignedProjectAsync(int companyId);
 	}
 }
