@@ -22,6 +22,7 @@ namespace BugTrackerPrime.Data
         private static int company4Id;
         private static int company5Id;
 
+        #region Get Connetion String
         public static string GetConnectionString(IConfiguration configuration)
         {
             //The default connection string will come from appSettings like usual
@@ -31,6 +32,9 @@ namespace BugTrackerPrime.Data
             return string.IsNullOrEmpty(databaseUrl) ? connectionString : BuildConnectionString(databaseUrl);
         }
 
+        #endregion
+
+        #region Build Connection
         public static string BuildConnectionString(string databaseUrl)
         {
             //Provides an object representation of a uniform resource identifier (URI) and easy access to the parts of the URI.
@@ -50,6 +54,9 @@ namespace BugTrackerPrime.Data
             return builder.ToString();
         }
 
+        #endregion
+
+        #region Manage Data
         public static async Task ManageDataAsync(IHost host)
         {
             using var svcScope = host.Services.CreateScope();
@@ -77,7 +84,9 @@ namespace BugTrackerPrime.Data
             await SeedDefautTicketsAsync(dbContextSvc);
         }
 
+        #endregion
 
+        #region Seed Roles
         public static async Task SeedRolesAsync(RoleManager<IdentityRole> roleManager)
         {
             //Seed Roles
@@ -88,6 +97,9 @@ namespace BugTrackerPrime.Data
             await roleManager.CreateAsync(new IdentityRole(Roles.DemoUser.ToString()));
         }
 
+        #endregion
+
+        #region Seed Default Companies
         public static async Task SeedDefaultCompaniesAsync(ApplicationDbContext context)
         {
             try
@@ -121,6 +133,9 @@ namespace BugTrackerPrime.Data
             }
         }
 
+        #endregion
+
+        #region Seed Default Project Priority
         public static async Task SeedDefaultProjectPriorityAsync(ApplicationDbContext context)
         {
             try
@@ -147,6 +162,9 @@ namespace BugTrackerPrime.Data
             }
         }
 
+        #endregion
+
+        #region Seed Default Project
         public static async Task SeedDefautProjectsAsync(ApplicationDbContext context)
         {
 
@@ -220,8 +238,9 @@ namespace BugTrackerPrime.Data
             }
         }
 
+        #endregion
 
-
+        #region Seed Default Users
         public static async Task SeedDefaultUsersAsync(UserManager<BTUser> userManager)
         {
             //Seed Default Admin User
@@ -570,6 +589,9 @@ namespace BugTrackerPrime.Data
 
         }
 
+        #endregion
+
+        #region Seed Demo Users
         public static async Task SeedDemoUsersAsync(UserManager<BTUser> userManager)
         {
             //Seed Demo Admin User
@@ -723,8 +745,9 @@ namespace BugTrackerPrime.Data
             }
         }
 
+        #endregion
 
-
+        #region Seed Default Ticket Type
         public static async Task SeedDefaultTicketTypeAsync(ApplicationDbContext context)
         {
             try
@@ -753,6 +776,9 @@ namespace BugTrackerPrime.Data
             }
         }
 
+        #endregion
+
+        #region Seed Default Ticket Status
         public static async Task SeedDefaultTicketStatusAsync(ApplicationDbContext context)
         {
             try
@@ -779,6 +805,9 @@ namespace BugTrackerPrime.Data
             }
         }
 
+        #endregion
+
+        #region Seed Default Ticket Priority
         public static async Task SeedDefaultTicketPriorityAsync(ApplicationDbContext context)
         {
             try
@@ -805,8 +834,9 @@ namespace BugTrackerPrime.Data
             }
         }
 
+        #endregion
 
-
+        #region Seed Default Tickets
         public static async Task SeedDefautTicketsAsync(ApplicationDbContext context)
         {
             //Get project Ids
@@ -934,5 +964,7 @@ namespace BugTrackerPrime.Data
                 throw;
             }
         }
+
+        #endregion
     }
 }

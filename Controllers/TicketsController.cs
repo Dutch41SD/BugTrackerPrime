@@ -19,9 +19,10 @@ using BugTrackerPrime.Models.ViewModels;
 
 namespace BugTrackerPrime.Controllers
 {
+	[Authorize]
 	public class TicketsController : Controller
 	{
-		private readonly ApplicationDbContext _context;
+
 		private readonly UserManager<BTUser> _userManager;
 		private readonly IBTProjectService _projectService;
 		private readonly IBTLookupService _lookupService;
@@ -30,15 +31,14 @@ namespace BugTrackerPrime.Controllers
 		private readonly IBTTicketHistoryService _historyService;
 
 
-		public TicketsController(ApplicationDbContext context,
-								 UserManager<BTUser> userManager,
+		public TicketsController(UserManager<BTUser> userManager,
 								 IBTProjectService projectService,
 								 IBTLookupService lookupService,
 								 IBTTicketService ticketService,
 								 IBTFileService fileService,
 								 IBTTicketHistoryService historyService)
 		{
-			_context = context;
+
 			_userManager = userManager;
 			_projectService = projectService;
 			_lookupService = lookupService;
@@ -47,13 +47,9 @@ namespace BugTrackerPrime.Controllers
 			_historyService = historyService;
 		}
 
-		// GET: Tickets
-		public async Task<IActionResult> Index()
-		{
-			var applicationDbContext = _context.Tickets.Include(t => t.DeveloperUser).Include(t => t.OwnerUser).Include(t => t.Project).Include(t => t.TicketPriority).Include(t => t.TicketStatus).Include(t => t.TicketType);
-			return View(await applicationDbContext.ToListAsync());
-		}
 
+
+		#region My Tickets
 		public async Task<IActionResult> MyTickets()
 		{
 			BTUser btUser = await _userManager.GetUserAsync(User);
@@ -63,6 +59,9 @@ namespace BugTrackerPrime.Controllers
 			return View(tickets);
 		}
 
+		#endregion
+
+		#region All Tickets
 		public async Task<IActionResult> AllTickets()
 		{
 			int companyId = User.Identity.GetCompanyId().Value;
@@ -79,6 +78,9 @@ namespace BugTrackerPrime.Controllers
 			}
 		}
 
+		#endregion
+
+		#region Archived Tickets
 		public async Task<IActionResult> ArchivedTickets()
 		{
 			int companyId = User.Identity.GetCompanyId().Value;
@@ -88,6 +90,9 @@ namespace BugTrackerPrime.Controllers
 			return View(tickets);
 		}
 
+		#endregion
+
+		#region Unassigned Tickets
 		[Authorize(Roles = "Admin,ProjectManager")]
 		public async Task<IActionResult> UnassignedTickets()
 		{
@@ -118,6 +123,10 @@ namespace BugTrackerPrime.Controllers
 
 		}
 
+		#endregion
+
+		#region Assign Developer
+		[Authorize(Roles = "Admin, ProjectManager")]
 		[HttpGet]
 		public async Task<IActionResult> AssignDeveloper(int id)
 		{
@@ -131,7 +140,33 @@ namespace BugTrackerPrime.Controllers
 			return View(model);
 		}
 
+		#endregion
 
+		// GET: Tickets/Details/5
+		#region Details
+		public async Task<IActionResult> Details(int? id)
+		{
+			if (id == null)
+			{
+				return NotFound();
+			}
+
+
+
+			Ticket ticket = await _ticketService.GetTicketByIdAsync(id.Value);
+
+
+			if (ticket == null)
+			{
+				return NotFound();
+			}
+
+			return View(ticket);
+		}
+
+		#endregion
+
+		#region Post - Assign Developer
 		[HttpPost]
 		[ValidateAntiForgeryToken]
 		public async Task<IActionResult> AssignDeveloper(AssignDeveloperViewModel model)
@@ -163,28 +198,7 @@ namespace BugTrackerPrime.Controllers
 			return RedirectToAction(nameof(AssignDeveloper), new { model.DeveloperId });
 		}
 
-
-
-		// GET: Tickets/Details/5
-		public async Task<IActionResult> Details(int? id)
-		{
-			if (id == null)
-			{
-				return NotFound();
-			}
-
-
-
-			Ticket ticket = await _ticketService.GetTicketByIdAsync(id.Value);
-
-
-			if (ticket == null)
-			{
-				return NotFound();
-			}
-
-			return View(ticket);
-		}
+		#endregion
 
 		#region Show File
 		public async Task<IActionResult> ShowFile(int id)
@@ -201,6 +215,7 @@ namespace BugTrackerPrime.Controllers
 		#endregion
 
 		// GET: Tickets/Create
+		#region Get - Create
 		public async Task<IActionResult> Create()
 		{
 			BTUser btUser = await _userManager.GetUserAsync(User);
@@ -222,9 +237,12 @@ namespace BugTrackerPrime.Controllers
 			return View();
 		}
 
+		#endregion
+
 		// POST: Tickets/Create
 		// To protect from overposting attacks, enable the specific properties you want to bind to.
 		// For more details, see http://go.microsoft.com/fwlink/?LinkId=317598.
+		#region Post - Create
 		[HttpPost]
 		[ValidateAntiForgeryToken]
 		public async Task<IActionResult> Create([Bind("Id,Title,Description,ProjectId,TicketTypeId,TicketPriorityId")] Ticket ticket)
@@ -271,6 +289,9 @@ namespace BugTrackerPrime.Controllers
 			return View(ticket);
 		}
 
+		#endregion
+
+		#region Get - Edit
 		// GET: Tickets/Edit/5
 		public async Task<IActionResult> Edit(int? id)
 		{
@@ -295,9 +316,12 @@ namespace BugTrackerPrime.Controllers
 			return View(ticket);
 		}
 
+		#endregion
+
 		// POST: Tickets/Edit/5
 		// To protect from overposting attacks, enable the specific properties you want to bind to.
 		// For more details, see http://go.microsoft.com/fwlink/?LinkId=317598.
+		#region Post - Edit
 		[HttpPost]
 		[ValidateAntiForgeryToken]
 		public async Task<IActionResult> Edit(int id, [Bind("Id,Title,Description,Created,Updated,Archived,ProjectId,TicketTypeId,TicketPriorityId,TicketStatusId,OwnerUserId,DeveloperUserId")] Ticket ticket)
@@ -344,6 +368,9 @@ namespace BugTrackerPrime.Controllers
 			return View(ticket);
 		}
 
+		#endregion
+
+		#region Add Ticket Comment
 		[HttpPost]
 		[ValidateAntiForgeryToken]
 		public async Task<IActionResult> AddTicketComment([Bind("Id,TicketId,Comment")] TicketComment ticketComment)
@@ -371,6 +398,9 @@ namespace BugTrackerPrime.Controllers
 
 		}
 
+		#endregion
+
+		#region Add Ticket Attachment
 		[HttpPost]
 		[ValidateAntiForgeryToken]
 		public async Task<IActionResult> AddTicketAttachment([Bind("Id,FormFile,Description,TicketId")] TicketAttachment ticketAttachment)
@@ -410,7 +440,11 @@ namespace BugTrackerPrime.Controllers
 			return RedirectToAction("Details", new { id = ticketAttachment.TicketId, message = statusMessage });
 		}
 
+		#endregion
+
 		// GET: Tickets/Delete/5
+		#region Archive
+		[Authorize(Roles = "Admin, ProjectManager")]
 		public async Task<IActionResult> Archive(int? id)
 		{
 			if (id == null)
@@ -428,7 +462,11 @@ namespace BugTrackerPrime.Controllers
 			return View(ticket);
 		}
 
+		#endregion
+
 		// POST: Tickets/Delete/5
+		#region Archived Confirmed
+		[Authorize(Roles = "Admin, ProjectManager")]
 		[HttpPost, ActionName("Archive")]
 		[ValidateAntiForgeryToken]
 		public async Task<IActionResult> ArchiveConfirmed(int id)
@@ -441,7 +479,11 @@ namespace BugTrackerPrime.Controllers
 			return RedirectToAction(nameof(Index));
 		}
 
+		#endregion
+
 		// GET: Tickets/Delete/5
+		#region Restore
+		[Authorize(Roles = "Admin, ProjectManager")]
 		public async Task<IActionResult> Restore(int? id)
 		{
 			if (id == null)
@@ -459,7 +501,11 @@ namespace BugTrackerPrime.Controllers
 			return View(ticket);
 		}
 
+		#endregion
+
 		// POST: Tickets/Delete/5
+		#region Restore Confirmed
+		[Authorize(Roles = "Admin, ProjectManager")]
 		[HttpPost, ActionName("Restore")]
 		[ValidateAntiForgeryToken]
 		public async Task<IActionResult> RestoreConfirmed(int id)
@@ -472,6 +518,7 @@ namespace BugTrackerPrime.Controllers
 			return RedirectToAction(nameof(Index));
 		}
 
+		#endregion
 
 		private async Task<bool> TicketExists(int id)
 		{
