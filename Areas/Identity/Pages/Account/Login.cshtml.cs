@@ -18,7 +18,7 @@ namespace BugTrackerPrime.Areas.Identity.Pages.Account
     [AllowAnonymous]
     public class LoginModel : PageModel
     {
-        [System.Diagnostics.CodeAnalysis.SuppressMessage("CodeQuality", "IDE0052:Remove unread private members", Justification = "<Pending>")]
+        //[System.Diagnostics.CodeAnalysis.SuppressMessage("CodeQuality", "IDE0052:Remove unread private members", Justification = "<Pending>")]
         private readonly UserManager<BTUser> _userManager;
         private readonly SignInManager<BTUser> _signInManager;
         private readonly ILogger<LoginModel> _logger;
@@ -75,7 +75,7 @@ namespace BugTrackerPrime.Areas.Identity.Pages.Account
 
         public async Task<IActionResult> OnPostAsync(string returnUrl = null)
         {
-            returnUrl ??= Url.Content("~/");
+            returnUrl ??= Url.Content("~/Home/Dashboard");
 
             ExternalLogins = (await _signInManager.GetExternalAuthenticationSchemesAsync()).ToList();
         

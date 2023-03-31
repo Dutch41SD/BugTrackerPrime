@@ -16,20 +16,23 @@ namespace BugTrackerPrime.Services
         #region Properties
         private readonly ApplicationDbContext _context;
         private readonly IBTRolesService _rolesService;
+        private readonly IBTProjectService _projectService;
+		#endregion
 
-        #endregion
-        
-        #region Constructor
-        public BTProjectService(ApplicationDbContext context, IBTRolesService rolesService)
-        {
-            _context = context;
-            _rolesService = rolesService;
-        }
+		#region Constructor
+		public BTProjectService(ApplicationDbContext context,
+			IBTRolesService rolesService,
+			IBTProjectService projectService)
+		{
+			_context = context;
+			_rolesService = rolesService;
+			_projectService = projectService;
+		}
 
-        #endregion
+		#endregion
 
-        #region Add New Project
-        public async Task AddNewProjectAsync(Project project)
+		#region Add New Project
+		public async Task AddNewProjectAsync(Project project)
         {
             _context.Add(project);
             await _context.SaveChangesAsync();
