@@ -19,7 +19,7 @@ namespace BugTrackerPrime.Services.Interfaces
 
         public Task<List<Project>> GetAllProjectsByCompanyAsync(int companyId);
 
-        public Task<List<Project>> GetAllProjectsByPriority(int companyId, string priorityName);
+        public Task<List<Project>> GetAllProjectsByPriorityAsync(int companyId, string priorityName);
 
         public Task<List<BTUser>> GetAllProjectMembersExceptPMAsync(int projectId);
 
@@ -54,7 +54,6 @@ namespace BugTrackerPrime.Services.Interfaces
         public Task RestoreProjectAsync(Project project);
 
         public Task UpdateProjectAsync(Project project);
-        Task<IEnumerable> GetAllProjectsByCompanyAsync(string id);
-		Task<IEnumerable> GetAllProjectsByPriorityAsync(int companyId, string priority);
+
 	}
 }
